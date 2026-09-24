@@ -12,7 +12,7 @@ import logging
 
 from config import settings
 from models import get_db, test_connection
-from api.routes import inventory, analysis, simulation, procurement, n8n
+from api.routes import inventory, analysis, simulation, procurement, n8n, assistant
 
 # Configure logging
 logging.basicConfig(
@@ -109,6 +109,7 @@ app.include_router(analysis.router, prefix="/api", tags=["Analysis"])
 app.include_router(simulation.router, prefix="/api", tags=["Simulation"])
 app.include_router(procurement.router, prefix="/api", tags=["Procurement"])
 app.include_router(n8n.router, prefix="/api", tags=["n8n Integration"])
+app.include_router(assistant.router, prefix="/api", tags=["AI Assistant"])
 
 
 if __name__ == "__main__":

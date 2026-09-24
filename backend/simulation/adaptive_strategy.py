@@ -52,7 +52,8 @@ class AdaptiveStrategy:
         self.stockouts = 0
         self.overstock_events = 0
         self.emergency_orders = 0
-        self.reorder_point_history = []  # Track how ROP changes over time
+        self.reorder_point_history = []
+        self.last_order_day = -999  # Cooldown tracking
 
     def check_reorder_condition(
         self,
@@ -76,9 +77,30 @@ class AdaptiveStrategy:
         Returns:
             Tuple of (should_reorder, order_details)
         """
+        # Cooldown: don't order if we ordered within the last few days (unless emergency)
+        days_since_last_order = current_day - self.last_order_day
+
+        if len(sales_history) < 2:
+            return False, {}
+
         if len(sales_history) < 7:
-            # Not enough data for intelligent decision
-            # Fall back to simple logic
+            avg_demand = sum(sales_history) / len(sales_history)
+            simple_rop = avg_demand * self.supplier_lead_time_days * 1.5
+            if current_inventory <= simple_rop and days_since_last_order >= self.supplier_lead_time_days:
+                order_qty = int(avg_demand * self.supplier_lead_time_days * 2.5)
+                order_qty = max(order_qty, self.minimum_order_quantity)
+                self.last_order_day = current_day
+                order_details = {
+                    'day': current_day,
+                    'quantity': order_qty,
+                    'reason': 'Warmup period - proactive order based on early demand estimate',
+                    'reorder_point_used': simple_rop,
+                    'risk_level': 'medium',
+                    'days_until_stockout': current_inventory / max(avg_demand, 1),
+                    'emergency': False
+                }
+                self.orders_placed.append(order_details)
+                return True, order_details
             return False, {}
 
         # Calculate dynamic reorder point
@@ -93,7 +115,6 @@ class AdaptiveStrategy:
 
         dynamic_rop = rop_calc['dynamic_reorder_point']
 
-        # Track reorder point evolution
         self.reorder_point_history.append({
             'day': current_day,
             'reorder_point': dynamic_rop
@@ -107,17 +128,20 @@ class AdaptiveStrategy:
             dynamic_reorder_point=dynamic_rop
         )
 
-        # Decide whether to order
-        # Order if:
-        # 1. Below dynamic reorder point, OR
-        # 2. Risk is critical/high
+        is_emergency = (
+            risk_assessment['risk_level'] == 'critical' and
+            current_inventory <= dynamic_rop
+        )
+
+        # Order when at or approaching dynamic ROP (10% buffer), with cooldown
+        cooldown = max(self.supplier_lead_time_days // 2, 2)
+        rop_with_buffer = dynamic_rop * 1.1
         should_reorder = (
-            current_inventory <= dynamic_rop or
-            risk_assessment['risk_level'] in ['critical', 'high']
+            current_inventory <= rop_with_buffer and
+            (days_since_last_order >= cooldown or is_emergency)
         )
 
         if should_reorder:
-            # Calculate intelligent order quantity
             order_calc = calculate_order_quantity(
                 sales_data=sales_history,
                 current_inventory=current_inventory,
@@ -126,7 +150,7 @@ class AdaptiveStrategy:
                 minimum_order_quantity=self.minimum_order_quantity
             )
 
-            order_quantity = order_calc['order_quantity']
+            order_quantity = max(order_calc['order_quantity'], self.minimum_order_quantity)
 
             order_details = {
                 'day': current_day,
@@ -135,13 +159,13 @@ class AdaptiveStrategy:
                 'reorder_point_used': dynamic_rop,
                 'risk_level': risk_assessment['risk_level'],
                 'days_until_stockout': risk_assessment['days_until_stockout'],
-                'emergency': risk_assessment['risk_level'] == 'critical'
+                'emergency': is_emergency
             }
 
-            # Track emergency orders
-            if order_details['emergency']:
+            if is_emergency:
                 self.emergency_orders += 1
 
+            self.last_order_day = current_day
             self.orders_placed.append(order_details)
 
             return True, order_details
@@ -177,6 +201,7 @@ class AdaptiveStrategy:
         self.overstock_events = 0
         self.emergency_orders = 0
         self.reorder_point_history = []
+        self.last_order_day = -999
 
 
 # Example usage

@@ -63,38 +63,21 @@ class OllamaProvider:
         if context:
             full_prompt = f"Context:\n{context}\n\nQuestion: {prompt}"
 
-        # Prepare request payload
         payload = {
             "model": self.model,
             "prompt": full_prompt,
             "stream": False,
+            "think": False,
             "options": {
                 "temperature": temperature
             }
         }
 
-        # Add system prompt if provided
         if system:
             payload["system"] = system
 
-        # Add max tokens if specified
         if max_tokens:
             payload["options"]["num_predict"] = max_tokens
-
-        # Add thinking mode setting
-        # Note: This may not be a real Ollama API parameter - adjust based on actual API
-        if self.think:
-            payload["options"]["think"] = True
-
-        # Add keep_alive setting
-        # Ollama API accepts keep_alive as a string or number
-        # -1 means keep loaded indefinitely
-        if self.keep_alive == -1:
-            payload["keep_alive"] = "-1"
-        elif self.keep_alive == 0:
-            payload["keep_alive"] = "0"
-        else:
-            payload["keep_alive"] = f"{self.keep_alive}s"
 
         # Make request to Ollama API
         try:
@@ -141,27 +124,22 @@ class OllamaProvider:
             "model": self.model,
             "messages": messages,
             "stream": False,
-            "options": {
-                "temperature": temperature
-            }
+            "think": False,
         }
 
+        options = {}
+        if temperature != 0.7:
+            options["temperature"] = temperature
         if max_tokens:
-            payload["options"]["num_predict"] = max_tokens
-
-        # Add keep_alive setting
-        if self.keep_alive == -1:
-            payload["keep_alive"] = "-1"
-        elif self.keep_alive == 0:
-            payload["keep_alive"] = "0"
-        else:
-            payload["keep_alive"] = f"{self.keep_alive}s"
+            options["num_predict"] = max_tokens
+        if options:
+            payload["options"] = options
 
         try:
             response = requests.post(
                 f"{self.base_url}/api/chat",
                 json=payload,
-                timeout=60
+                timeout=120
             )
             response.raise_for_status()
 

@@ -200,9 +200,10 @@ def run_comparison_scenario(
     """
     # If fixed parameters not provided, calculate reasonable defaults
     if fixed_reorder_point is None or fixed_order_quantity is None:
-        avg_demand = np.mean(actual_demand_series[:30])  # Use first 30 days
-        fixed_reorder_point = int(avg_demand * supplier_lead_time_days * 1.5)
-        fixed_order_quantity = int(avg_demand * supplier_lead_time_days * 2)
+        avg_demand = np.mean(actual_demand_series[:30])
+        # Fixed strategy uses initial average only - doesn't adapt to changes
+        fixed_reorder_point = int(avg_demand * supplier_lead_time_days * 1.2)
+        fixed_order_quantity = int(avg_demand * supplier_lead_time_days * 1.5)
 
     # Create strategies
     baseline_strategy = FixedThresholdStrategy(
@@ -215,7 +216,7 @@ def run_comparison_scenario(
     adaptive_strategy = AdaptiveStrategy(
         sku_id=sku_id,
         supplier_lead_time_days=supplier_lead_time_days,
-        service_level=0.95,
+        service_level=0.98,
         minimum_order_quantity=50
     )
 
