@@ -274,7 +274,8 @@ class ProcurementWorkflow:
         if not sku:
             raise ValueError(f"SKU {sku_id} not found")
 
-        supplier = self.db.query(Supplier).filter(Supplier.supplier_id == supplier_id).first()
+        sid = int(supplier_id)
+        supplier = self.db.query(Supplier).filter(Supplier.id == sid).first()
         if not supplier:
             raise ValueError(f"Supplier {supplier_id} not found")
 
@@ -282,7 +283,7 @@ class ProcurementWorkflow:
             self.db.query(SKUSupplier)
             .filter(
                 SKUSupplier.sku_id == sku_id,
-                SKUSupplier.supplier_id == supplier_id
+                SKUSupplier.supplier_id == sid
             )
             .first()
         )

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { analysisApi } from '../services/api';
+import { analysisApi, n8nApi } from '../services/api';
 import type { AnalysisResult } from '../types';
 import ForecastChart from '../components/ForecastChart';
 import '../styles/Analysis.css';
@@ -12,6 +12,9 @@ export default function Analysis() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [autoAnalyzed, setAutoAnalyzed] = useState(false);
+  const [poStatus, setPoStatus] = useState<string | null>(null);
+  const [poLoading, setPoLoading] = useState(false);
+  const [alertStatus, setAlertStatus] = useState<string | null>(null);
 
   const handleAnalyze = async () => {
     if (!skuId.trim()) {
@@ -60,6 +63,38 @@ export default function Analysis() {
       handleAnalyze();
     }
   }, [searchParams, autoAnalyzed]);
+
+  const handleGeneratePO = async () => {
+    try {
+      setPoLoading(true);
+      setPoStatus(null);
+      const data = await n8nApi.triggerPOApproval(skuId);
+      if (data.po_created) {
+        setPoStatus(`PO ${data.purchase_order.po_id} created - ${data.purchase_order.quantity} units, $${data.purchase_order.total_cost.toFixed(2)} - Sent to n8n for approval (check email + Slack)`);
+      } else {
+        setPoStatus(data.message || 'No reorder needed');
+      }
+    } catch (err: any) {
+      if (err?.response?.status === 201 || err?.response?.data?.po_created) {
+        const data = err.response.data;
+        setPoStatus(`PO ${data.purchase_order.po_id} created - sent to n8n workflow`);
+      } else {
+        setPoStatus('PO created in database (n8n webhook may be inactive - publish your workflows)');
+      }
+      console.error(err);
+    } finally {
+      setPoLoading(false);
+    }
+  };
+
+  const handleSendAlert = async () => {
+    if (!result) return;
+    setAlertStatus(null);
+    const riskLevel = result.risk_assessment.risk_level;
+    const msg = `${skuId} is ${riskLevel} risk - ${result.risk_assessment.days_until_stockout.toFixed(1)} days until stockout`;
+    await n8nApi.triggerCriticalAlert(skuId, 0, riskLevel, msg);
+    setAlertStatus('Alert sent to n8n - check email + Slack');
+  };
 
   const getRiskClass = (level: string) => {
     return `risk-level ${level.toLowerCase()}`;
@@ -286,6 +321,14 @@ export default function Analysis() {
                   {result.risk_assessment.recommended_action}
                 </span>
               </div>
+              {(result.risk_assessment.risk_level === 'critical' || result.risk_assessment.risk_level === 'high') && (
+                <div className="alert-action">
+                  <button className="btn-alert" onClick={handleSendAlert}>
+                    Send Alert (n8n Workflow 2)
+                  </button>
+                  {alertStatus && <span className="alert-sent">{alertStatus}</span>}
+                </div>
+              )}
             </div>
           </div>
 
@@ -310,7 +353,36 @@ export default function Analysis() {
                   <span className="value">{result.recommended_order.lead_time_days} days</span>
                 </div>
               </div>
-              <button className="btn-primary">Generate Purchase Order</button>
+              <button
+                className="btn-primary"
+                onClick={handleGeneratePO}
+                disabled={poLoading}
+              >
+                {poLoading ? 'Generating PO...' : 'Generate Purchase Order'}
+              </button>
+              {poStatus && (
+                <div className="po-status-banner">
+                  {poStatus}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Generate PO button when no recommended_order but needs reorder */}
+          {!result.recommended_order && result.needs_reorder && (
+            <div className="generate-po-section">
+              <button
+                className="btn-primary btn-generate-po"
+                onClick={handleGeneratePO}
+                disabled={poLoading}
+              >
+                {poLoading ? 'Generating PO...' : 'Auto-Generate Purchase Order'}
+              </button>
+              {poStatus && (
+                <div className="po-status-banner">
+                  {poStatus}
+                </div>
+              )}
             </div>
           )}
 

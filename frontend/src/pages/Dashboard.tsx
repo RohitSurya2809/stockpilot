@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { inventoryApi } from '../services/api';
+import { inventoryApi, n8nApi } from '../services/api';
 import type { SKU } from '../types';
 import '../styles/Dashboard.css';
 
@@ -10,6 +10,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'critical' | 'high' | 'medium' | 'low'>('all');
+  const [n8nStatus, setN8nStatus] = useState<string | null>(null);
+  const [n8nLoading, setN8nLoading] = useState(false);
 
   useEffect(() => {
     loadInventory();
@@ -48,6 +50,25 @@ export default function Dashboard() {
 
   const criticalCount = inventory.filter((s) => s.risk_level === 'critical').length;
   const highCount = inventory.filter((s) => s.risk_level === 'high').length;
+
+  const handleCheckReorder = async () => {
+    try {
+      setN8nLoading(true);
+      setN8nStatus(null);
+      const data = await n8nApi.checkReorder();
+      if (data.reorder_needed > 0) {
+        const skuList = data.alerts.map((a: any) => a.sku_id).join(', ');
+        setN8nStatus(`Found ${data.reorder_needed} SKUs needing reorder: ${skuList}. Checked ${data.total_skus_checked} total.`);
+      } else {
+        setN8nStatus(`All ${data.total_skus_checked} SKUs checked - no reorders needed.`);
+      }
+    } catch (err) {
+      setN8nStatus('Failed to check reorder status');
+      console.error(err);
+    } finally {
+      setN8nLoading(false);
+    }
+  };
 
   if (loading) {
     return <div className="loading">Loading inventory...</div>;
@@ -117,6 +138,18 @@ export default function Dashboard() {
             </p>
             <p className="stat-detail">Below reorder point</p>
           </div>
+        </div>
+        <div className="n8n-actions">
+          <button
+            className="btn-n8n"
+            onClick={handleCheckReorder}
+            disabled={n8nLoading}
+          >
+            {n8nLoading ? 'Checking...' : 'Run Reorder Check (n8n Workflow 3)'}
+          </button>
+          {n8nStatus && (
+            <div className="n8n-status">{n8nStatus}</div>
+          )}
         </div>
       </div>
 

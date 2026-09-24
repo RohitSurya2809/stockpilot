@@ -152,11 +152,11 @@ async def auto_generate_purchase_order(
         decision = workflow.analyze_sku(sku_id)
 
         if not decision.needs_reorder:
-            return {
+            return convert_numpy_types({
                 "message": "No reorder needed",
                 "reasoning": decision.reasoning,
                 "po_created": False
-            }
+            })
 
         if not decision.recommended_order:
             raise HTTPException(
@@ -173,12 +173,12 @@ async def auto_generate_purchase_order(
             created_by=created_by
         )
 
-        return {
+        return convert_numpy_types({
             "message": "Purchase order created",
             "po_created": True,
             "purchase_order": po.to_dict(),
             "analysis": decision.to_dict()
-        }
+        })
 
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))

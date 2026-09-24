@@ -285,6 +285,58 @@
   color: #15803d;
 }
 
+.alert-action {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.btn-alert {
+  padding: 0.375rem 0.75rem;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-alert:hover {
+  opacity: 0.9;
+}
+
+.alert-sent {
+  font-size: 0.8125rem;
+  color: #059669;
+  font-weight: 600;
+}
+
+.po-status-banner {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border: 1px solid #10b981;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #065f46;
+}
+
+.generate-po-section {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.btn-generate-po {
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+}
+
 .statistical-badge {
   display: inline-flex;
   align-items: center;
