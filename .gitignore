@@ -124,3 +124,6 @@ Thumbs.db
 *_secrets.json
 credentials/
 secrets/
+FRONTEND_GUIDE.md
+FIXES_APPLIED.md
+SIMULATION_FIX.md

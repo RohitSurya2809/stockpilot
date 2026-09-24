@@ -11,6 +11,7 @@ from datetime import date, timedelta
 
 from models import get_db, SKU, Inventory, SalesHistory, SKUSupplier, Supplier
 from simulation.scenario_runner import run_comparison_scenario
+from api.utils import convert_numpy_types
 
 router = APIRouter()
 
@@ -94,7 +95,29 @@ async def run_sku_simulation(
     comparison_result['product_name'] = sku.name
     comparison_result['supplier_name'] = supplier.name
 
-    return comparison_result
+    # Transform to frontend-friendly format
+    transformed = {
+        'sku_id': comparison_result['sku_id'],
+        'simulation_days': comparison_result['simulation_days'],
+        'fixed_threshold': {
+            'stockouts': comparison_result['baseline_strategy']['metrics']['stockouts'],
+            'service_level': comparison_result['baseline_strategy']['metrics']['service_level'] / 100,  # Convert to decimal
+            'average_inventory': comparison_result['baseline_strategy']['metrics']['average_inventory'],
+            'orders_placed': comparison_result['baseline_strategy']['metrics']['orders_placed']
+        },
+        'adaptive': {
+            'stockouts': comparison_result['adaptive_strategy']['metrics']['stockouts'],
+            'service_level': comparison_result['adaptive_strategy']['metrics']['service_level'] / 100,  # Convert to decimal
+            'average_inventory': comparison_result['adaptive_strategy']['metrics']['average_inventory'],
+            'orders_placed': comparison_result['adaptive_strategy']['metrics']['orders_placed']
+        },
+        'improvement': {
+            'stockout_reduction': comparison_result['baseline_strategy']['metrics']['stockouts'] - comparison_result['adaptive_strategy']['metrics']['stockouts'],
+            'service_level_improvement': (comparison_result['adaptive_strategy']['metrics']['service_level'] - comparison_result['baseline_strategy']['metrics']['service_level']) / 100
+        }
+    }
+
+    return convert_numpy_types(transformed)
 
 
 @router.get("/simulation/comparison")

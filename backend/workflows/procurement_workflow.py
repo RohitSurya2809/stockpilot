@@ -200,20 +200,19 @@ class ProcurementWorkflow:
         recommended_order = None
         if needs_reorder:
             order_qty = calculate_order_quantity(
+                sales_data=daily_demand,
                 current_inventory=inventory.current_stock,
-                reorder_point=rop_result['dynamic_reorder_point'],
-                lead_time_days=lead_time_days,
-                avg_daily_demand=avg_demand,
-                forecast=forecast_result['forecast']
+                dynamic_rop=rop_result['dynamic_reorder_point'],
+                supplier_lead_time_days=lead_time_days
             )
 
             recommended_order = {
                 "supplier_id": primary_supplier.supplier_id,
-                "quantity": order_qty['recommended_quantity'],
+                "quantity": order_qty['order_quantity'],
                 "unit_cost": primary_supplier.cost_per_unit,
-                "total_cost": order_qty['recommended_quantity'] * primary_supplier.cost_per_unit,
+                "total_cost": order_qty['order_quantity'] * primary_supplier.cost_per_unit,
                 "lead_time_days": lead_time_days,
-                "rationale": order_qty['rationale']
+                "rationale": order_qty['reasoning']
             }
 
         return ProcurementDecision(
@@ -221,7 +220,7 @@ class ProcurementWorkflow:
             needs_reorder=needs_reorder,
             reasoning=reasoning,
             pattern_analysis=pattern_analysis,
-            forecast=forecast_result,
+            forecast=forecast_result if forecast_result else {},
             reorder_point=rop_result,
             risk_assessment=risk_result,
             recommended_order=recommended_order
