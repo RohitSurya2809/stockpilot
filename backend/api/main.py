@@ -12,7 +12,7 @@ import logging
 
 from config import settings
 from models import get_db, test_connection
-from api.routes import inventory, analysis, simulation
+from api.routes import inventory, analysis, simulation, procurement
 
 # Configure logging
 logging.basicConfig(
@@ -107,9 +107,7 @@ async def root():
 app.include_router(inventory.router, prefix="/api", tags=["Inventory"])
 app.include_router(analysis.router, prefix="/api", tags=["Analysis"])
 app.include_router(simulation.router, prefix="/api", tags=["Simulation"])
-# Procurement router will be added in Phase 3:
-# from api.routes import procurement
-# app.include_router(procurement.router, prefix="/api", tags=["Procurement"])
+app.include_router(procurement.router, prefix="/api", tags=["Procurement"])
 
 
 if __name__ == "__main__":
