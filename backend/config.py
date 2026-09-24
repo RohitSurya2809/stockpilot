@@ -51,6 +51,14 @@ class Settings(BaseSettings):
         default="qwen2.5:8b",
         description="Ollama model to use"
     )
+    ollama_think: bool = Field(
+        default=False,
+        description="Enable Ollama thinking mode (increases latency)"
+    )
+    ollama_keep_alive: int = Field(
+        default=-1,
+        description="Keep model loaded in memory (-1 = indefinitely, 0 = unload immediately, N seconds)"
+    )
     gemini_api_key: str = Field(
         default="",
         description="Gemini API key for fallback"

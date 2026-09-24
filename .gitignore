@@ -84,15 +84,26 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Internal Planning Documents (DO NOT COMMIT - judges monitoring repo)
+# ============================================================
+# INTERNAL PLANNING DOCUMENTS (DO NOT COMMIT)
+# These are for development only - judges should NOT see these
+# ============================================================
 PROJECT_SPEC.md
 IMPLEMENTATION_PLAN.md
 TASK_PLAN.md
 TECHNICAL_ARCHITECTURE.md
+UPDATE_SUMMARY.md
+OLLAMA_CONFIG_UPDATE.md
+OLLAMA_UPDATE_SUMMARY.txt
 REVISED_*.md
 *_INTERNAL.md
+*_PLAN.md
 planning/
 notes/
+.claude/
+
+# Keep README_REPO.md (it's the template for README.md)
+# The actual README.md should be the public-facing one
 
 # Temporary files
 *.tmp
