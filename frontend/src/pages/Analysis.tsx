@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { procurementApi } from '../services/api';
+import { analysisApi } from '../services/api';
 import type { AnalysisResult } from '../types';
 import ForecastChart from '../components/ForecastChart';
 import '../styles/Analysis.css';
@@ -22,8 +22,19 @@ export default function Analysis() {
     try {
       setLoading(true);
       setError(null);
-      const data = await procurementApi.analyze(skuId);
-      setResult(data);
+      const data = await analysisApi.analyze(skuId);
+
+      // Transform nested data structure to flat structure
+      const transformedData = {
+        ...data,
+        pattern_analysis: data.pattern_analysis.data,
+        forecast: data.forecast.data,
+        reorder_point: data.dynamic_reorder_point.data,
+        risk_assessment: data.risk_assessment.data,
+        recommended_order: null, // Not in complete analysis response
+      };
+
+      setResult(transformedData);
     } catch (err) {
       setError('Failed to analyze SKU');
       console.error(err);
