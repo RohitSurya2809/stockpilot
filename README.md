@@ -1,257 +1,263 @@
-# STOCKPILOT
+# 🚀 STOCKPILOT
 **Agentic Inventory & Procurement Automation**
 
-> "Predict. Replenish. Automate."
+> *"Predict. Replenish. Automate."*
+
+**Hack the Horizon 2.0** | Smart Automation Track | Problem Statement HTH-SA-03
 
 ---
 
-## 🎯 Project Overview
+## 💡 The Problem
 
-StockPilot is an intelligent inventory and procurement automation platform built for Hack the Horizon 2.0 (Smart Automation track). It learns demand patterns, predicts stockout/overstock risks, dynamically calculates reorder points, and automatically prepares purchase orders for human approval.
+Traditional inventory systems use **fixed reorder-point thresholds** that ignore actual demand behavior:
+- ❌ **Stockouts during demand spikes** → Lost sales
+- ❌ **Overstock during slow periods** → Capital tied up
+- ❌ **Manual procurement workflows** → Delays and errors
+- ❌ **No adaptability** → Cannot respond to changing patterns
 
-**Problem Statement**: HTH-SA-03 - Usage-Pattern-Based Automated Inventory Restocking System
-
-**Key Differentiator**: Unlike traditional fixed-threshold systems that react to stock levels, StockPilot predicts future inventory risk and proactively initiates procurement workflows.
-
----
-
-## 📚 Documentation Structure
-
-We've created comprehensive planning documents to guide the 24-hour development:
-
-### 1. **PROJECT_SPEC.md**
-Complete project specification including:
-- Hackathon context and requirements
-- Product vision and differentiation
-- Core functionality details
-- Demo scenario requirements
-- Critical baseline comparison methodology
-- Development philosophy
-
-### 2. **IMPLEMENTATION_PLAN.md**
-5-phase implementation strategy:
-- **Phase 1** (Hours 0-4): Foundation & Infrastructure
-- **Phase 2** (Hours 4-10): Core Analytics Engine
-- **Phase 3** (Hours 10-16): Agentic Architecture
-- **Phase 4** (Hours 16-21): Frontend Dashboard
-- **Phase 5** (Hours 21-24): Integration, Testing & Demo
-
-### 3. **TASK_PLAN.md**
-Granular task breakdown with:
-- Specific tasks for each phase
-- Time estimates (realistic for 24-hour hackathon)
-- Dependencies between tasks
-- Priority levels (P0-P3)
-- Critical path identification
-
-### 4. **TECHNICAL_ARCHITECTURE.md**
-Technical design decisions including:
-- Complete architecture diagrams
-- Database schema (9 tables)
-- Core algorithms with Python pseudocode
-- API endpoint definitions
-- Agent/Skill/Tool architecture details
-- MCP integration strategy
-- Frontend component structure
-- Risk mitigation strategies
+**Real-world impact:** 30% of retail stockouts are preventable, and overstocking ties up 20-30% of working capital.
 
 ---
 
-## 🏗️ Architecture Overview
+## ✨ Our Solution
+
+**StockPilot** doesn't wait for inventory to hit a fixed threshold. Instead, it:
+
+✅ **Learns demand patterns** (trend, seasonality, volatility)  
+✅ **Predicts future stockout risk** before it happens  
+✅ **Dynamically calculates reorder points** based on real-time demand  
+✅ **Automates procurement workflows** with human approval gates  
+✅ **Proves quantified improvement** vs traditional systems
+
+### Key Differentiator
+> Traditional systems **react** to stock levels.  
+> StockPilot **predicts** inventory risk and **proactively** initiates procurement.
+
+---
+
+## 🏗️ Architecture
+
+StockPilot uses an **Agent/Skill/Tool/MCP architecture** for maintainable automation:
 
 ```
-FRONTEND (React + TypeScript)
-    ↓ REST API
-INVENTORY AGENT (Reasoning & Orchestration)
-    ↓ Skill Selection
-SKILLS (Demand Analysis | Risk Assessment | Procurement)
-    ↓ Tool Execution
-TOOLS (Inventory | Forecast | Supplier | PO Generation)
-    ↓ Analytics & Data
-ANALYTICS ENGINE (Pattern Analysis | Forecasting | Risk Calculation)
-    ↓ MCP Layer
-COMPOSIO INTEGRATION (External System APIs)
-    ↓
-DATABASE (PostgreSQL)
+┌─────────────────────────────────────────────┐
+│       STOCKPILOT BACKEND (Python)            │
+│                                              │
+│  ┌────────────────────────────────────┐    │
+│  │      INVENTORY AGENT               │    │
+│  │   (Decides WHAT to do)             │    │
+│  └─────────────┬──────────────────────┘    │
+│                │                             │
+│         ┌──────┴──────┐                     │
+│         ▼              ▼                     │
+│    SKILLS          TOOLS                     │
+│  (Business)    (Operations)                 │
+│         │              │                     │
+│         └──────┬───────┘                     │
+│                ▼                             │
+│      ANALYTICS ENGINE                        │
+│   Pattern | Forecast | Risk                 │
+│                │                             │
+│                ▼                             │
+│           MCP LAYER                          │
+│      (External Systems)                      │
+│                │                             │
+│                ▼                             │
+│          n8n WORKFLOWS                       │
+│      (Executes HOW)                          │
+└─────────────────────────────────────────────┘
 ```
 
-**Key Architectural Concepts:**
-- **Agents**: Decide what needs to be done (InventoryAgent)
-- **Skills**: Orchestrate business capabilities (3 core skills)
-- **Tools**: Perform deterministic operations (typed, testable)
-- **MCP**: External system integration boundary (Composio)
+**Intelligence Layer:** Python analytics (deterministic, explainable)  
+**Decision Layer:** Agent orchestrates Skills → Tools  
+**Automation Layer:** n8n workflows + human approval gates
 
 ---
 
-## 🔧 Technology Stack
-
-### Backend
-- Python 3.10+ with FastAPI
-- PostgreSQL (user: postgres, password: root)
-- SQLAlchemy ORM
-- Pandas, NumPy for data processing
-- Scikit-learn (minimal usage)
-
-### Frontend
-- React 18 with TypeScript
-- Vite build tool
-- Material-UI for components
-- Recharts for visualization
-- Axios for API calls
-
-### MCP Integration
-- Composio Platform API
-- API Key: `ak_Efmy6gQFVO6_gbiEnxAU`
-
----
-
-## 🎯 Core Features
+## 📊 Core Intelligence
 
 ### 1. Pattern-Aware Demand Analysis
-- Trend detection (increasing/decreasing/stable)
-- Seasonality detection (weekly patterns)
-- Volatility assessment
+- **Trend Detection:** Linear regression identifies increasing/decreasing/stable demand
+- **Seasonality Detection:** Autocorrelation-based pattern recognition
+- **Volatility Assessment:** Coefficient of variation measurement
 
 ### 2. Intelligent Forecasting
-- Moving average + trend adjustment
-- Seasonality factors
+- Moving average + trend adjustment + seasonality
 - 30-day forecast horizon
+- Confidence scoring
 
 ### 3. Dynamic Reorder Points
-**Formula**: `ROP = (Avg Demand × Lead Time) + Safety Stock`
-- Adapts to demand changes
+```
+ROP = (Average Demand × Lead Time) + Safety Stock
+Safety Stock = Z-score(0.95) × σ_demand × √(lead_time)
+```
+- Adapts to demand changes automatically
 - Considers supplier lead time
-- Calculates safety stock based on volatility
+- Targets 95% service level
 
 ### 4. Predictive Risk Assessment
 - Days until stockout calculation
 - Stockout probability estimation
 - Risk levels: Critical / High / Medium / Low
 
-### 5. Automated Purchase Orders
-- Draft PO generation with reasoning
-- Human approval workflow
-- Audit trail for all decisions
-
-### 6. Baseline Comparison
-**Critical for judging**: Quantified comparison against fixed-threshold strategy
-- Side-by-side metrics
-- Same scenarios, different strategies
-- Charts showing improvement
+### 5. Baseline Comparison (Critical for Evaluation)
+Side-by-side simulation: Fixed threshold vs StockPilot adaptive strategy
 
 ---
 
-## 📊 Demo Scenario
+## 📈 Proven Results
 
-### The Demand Spike Story (2-3 minutes)
+**Simulation: 60-day demand spike scenario**
 
-1. **Dashboard Overview**: Show 6 SKUs, most healthy
-2. **Spike Introduction**: Focus on SKU-004 (Wireless Mouse)
-   - Normal demand: 20 units/day
-   - Demand increases: 22 → 24 → 27 → 31 → 35 → 38
-3. **Pattern Detection**: StockPilot recognizes increasing trend (+27%)
-4. **Risk Prediction**: "Stockout predicted in 4.2 days"
-5. **Dynamic Response**: Reorder point adjusted from 100 → 184 units
-6. **PO Generation**: Draft purchase order with full reasoning
-7. **Human Approval**: Review and approve PO
-8. **Baseline Comparison**: Show same scenario with fixed threshold
-   - Fixed strategy: 3 stockouts
-   - StockPilot: 0 stockouts
+| Metric | Fixed Threshold | StockPilot | Improvement |
+|--------|----------------|------------|-------------|
+| **Stockouts** | 3 | 0 | **100%** ✅ |
+| **Service Level** | 96.54% | 100% | **+3.46%** ✅ |
+| **Emergency Orders** | 4 | 4 | 0% |
+| **Orders Placed** | 7 | 7 | Same efficiency |
+
+**Key insight:** StockPilot eliminates stockouts during demand spikes while maintaining similar order frequency.
 
 ---
 
-## 🚀 Quick Start (After Implementation)
+## 🛠️ Technology Stack
+
+### Backend
+- **Python 3.10+** with FastAPI
+- **PostgreSQL** for data persistence
+- **Pandas + NumPy** for analytics
+- **Scikit-learn** for pattern detection
+
+### Frontend
+- **React 18** with TypeScript
+- **Vite** build tool
+- **Material-UI** components
+- **Recharts** for visualization
+
+### Automation
+- **n8n** for workflow orchestration
+- **MCP** integration layer
+- **Ollama (Qwen 3 8B)** for assistant explanations
+- **Gemini** fallback provider
+
+---
+
+## 🚀 Quick Start
 
 ### Prerequisites
 - Python 3.10+
-- PostgreSQL installed and running
+- PostgreSQL (running)
 - Node.js 18+
 
 ### Backend Setup
+
 ```bash
 cd backend
+
+# Create virtual environment
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# Install dependencies
 pip install -r requirements.txt
-python data/synthetic_generator.py  # Generate data
+
+# Configure environment
+cp .env.example .env
+# Edit .env with your database credentials
+
+# Initialize database & generate data
+python -c "from models.database import init_db; init_db()"
+python -m data.synthetic_generator
+
+# Start API server
 uvicorn api.main:app --reload
 ```
 
+API runs at: `http://localhost:8000`  
+Documentation: `http://localhost:8000/api/docs`
+
 ### Frontend Setup
+
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-### Database Setup
-```bash
-# Create database
-psql -U postgres
-CREATE DATABASE stockpilot;
-\q
+Frontend runs at: `http://localhost:5173`
 
-# Run migrations (after implementation)
-python backend/models/database.py
+---
+
+## 📊 Dataset
+
+**Synthetic data:** 90 days of inventory history for 6 SKUs with distinct patterns:
+
+1. **SKU-001 (Office Chair):** Stable demand (50±3 units/day)
+2. **SKU-002 (Laptop Stand):** Increasing trend (+2% growth/day)
+3. **SKU-003 (Desk Lamp):** Weekly seasonality (+50% peaks)
+4. **SKU-004 (Wireless Mouse):** Demand spike (20→50 units/day) ⚠️ **Demo SKU**
+5. **SKU-005 (Monitor Stand):** Decreasing trend (-1.5%/day)
+6. **SKU-006 (USB Cable Pack):** High volatility (40±15 units/day)
+
+**Total:** 540 sales records across 90 days
+
+---
+
+## 🎯 API Endpoints
+
+### Inventory
+- `GET /api/inventory` - List all SKUs with current stock
+- `GET /api/inventory/{sku_id}` - Get SKU details
+- `GET /api/sales-history/{sku_id}` - Get sales history
+
+### Analysis
+- `POST /api/analysis/{sku_id}/pattern` - Demand pattern analysis
+- `POST /api/analysis/{sku_id}/forecast` - Generate forecast
+- `POST /api/analysis/{sku_id}/reorder-point` - Calculate dynamic ROP
+- `POST /api/analysis/{sku_id}/risk` - Assess stockout/overstock risk
+- `POST /api/analysis/{sku_id}/complete` - Complete analysis
+
+### Simulation
+- `POST /api/simulation/run/{sku_id}` - Run baseline comparison
+- `GET /api/simulation/comparison` - Compare all SKUs
+
+---
+
+## 🧪 Testing the System
+
+### Test 1: View Inventory
+```bash
+curl http://localhost:8000/api/inventory
+```
+
+### Test 2: Analyze Demo SKU (Demand Spike)
+```bash
+curl -X POST http://localhost:8000/api/analysis/SKU-004/complete
+```
+
+### Test 3: Run Simulation Comparison
+```bash
+curl -X POST http://localhost:8000/api/simulation/run/SKU-004
+```
+
+### Test 4: Risk Assessment
+```bash
+curl -X POST http://localhost:8000/api/analysis/SKU-004/risk
 ```
 
 ---
 
-## 📈 Success Criteria
-
-### Must-Have (P0)
-- ✅ Working end-to-end demo
-- ✅ Dynamic reorder point calculation
-- ✅ Fixed-threshold baseline comparison
-- ✅ Quantified improvement metrics
-- ✅ Purchase order generation
-- ✅ Human approval workflow
-- ✅ Explainable decisions
-- ✅ Demand spike scenario working
-
-### Should-Have (P1)
-- ⭐ Agent/Skill/Tool architecture clearly demonstrated
-- ⭐ Polished dashboard UI
-- ⭐ Multiple demand patterns (6 SKUs)
-- ⭐ Professional demo presentation
-
-### Nice-to-Have (P3)
-- 💎 Multi-supplier optimization
-- 💎 Advanced ML forecasting
-- 💎 Real-time updates via WebSocket
-
----
-
-## 🎨 UI Design Philosophy
-
-**NOT** a generic CRUD dashboard  
-**IS** a modern enterprise operations console
-
-### Key Screens
-1. **Dashboard**: SKU overview with risk indicators
-2. **SKU Detail**: Deep-dive analysis with charts and reasoning
-3. **Comparison**: Adaptive vs Traditional side-by-side
-4. **Procurement**: PO management and audit trail
-
-### Design Elements
-- Risk-based color coding (Red/Orange/Yellow/Green)
-- Clear data visualization with Recharts
-- Professional, clean layout with Material-UI
-- Explainable AI - every decision has visible reasoning
-
----
-
-## 🔒 Safety & Accountability
+## 🔒 Human-in-the-Loop
 
 StockPilot is an **automation assistant**, not an autonomous system.
 
-**What it does**:
+**What it does:**
 - ✅ Analyze patterns
 - ✅ Predict risks
 - ✅ Recommend actions
 - ✅ Generate PO drafts
 
-**What it doesn't do**:
+**What it doesn't do:**
 - ❌ Execute purchases without approval
 - ❌ Override human decisions
 - ❌ Hide reasoning
@@ -260,174 +266,123 @@ StockPilot is an **automation assistant**, not an autonomous system.
 
 ---
 
-## 🎓 What Makes StockPilot Different
+## 📐 Evaluation Criteria Alignment
 
-Traditional inventory systems: **React** to stock levels  
-StockPilot: **Predicts** inventory risk and **proactively initiates** workflows
+### ✅ Pattern-Learning Quality
+- Trend detection via linear regression (R² scoring)
+- Seasonality via autocorrelation (7-day period)
+- Volatility via coefficient of variation
 
-**Value Proposition**: PREDICTIVE + DECISION-AWARE + AUTOMATED + HUMAN-CONTROLLED
-
-### Differentiation Factors
-1. Pattern-aware demand analysis
-2. Dynamic reorder points (not fixed)
-3. Supplier lead-time awareness
-4. Predictive stockout detection
-5. Automated PO generation
-6. Human approval gates
-7. Quantified baseline comparison
-8. Explainable decisions at every step
-
----
-
-## 📋 Implementation Priority
-
-### Critical Path (Must Complete)
-1. Database + Synthetic Data (2h)
-2. Analytics Algorithms (4h)
-3. Simulation & Baseline (3h)
-4. Agent/Skill/Tool Architecture (4h)
-5. API Integration (1.5h)
-6. Basic Frontend (4h)
-7. Integration & Demo (2.5h)
-8. Polish & Bug Fixes (2h)
-
-**Total: ~23 hours** (1-hour buffer)
-
----
-
-## 🧪 Testing Strategy
-
-### Must Test
-- All analytics algorithms produce sensible results
-- Simulation shows StockPilot > Fixed threshold
-- Agent orchestration works end-to-end
-- PO approval workflow functions correctly
-- Demo runs flawlessly 3 times in a row
-
-### Critical Verifications
-- Forecasts are realistic
-- Risk calculations are correct
-- Baseline comparison is fair (same data, different strategies)
-- All agent decisions are logged with reasoning
-
----
-
-## 🏆 Judging Criteria Alignment
-
-### Pattern-Learning Quality ✓
-- Trend detection with linear regression
-- Seasonality detection with autocorrelation
-- Volatility measurement with CV
-
-### Quantified Improvement ✓
-- Side-by-side simulation results
+### ✅ Quantified Improvement
+- Direct comparison: same data, both strategies
+- Simulation-based: 60-day scenarios
 - Metrics: stockouts, service level, inventory levels
-- Charts showing clear difference
 
-### Realistic Lead-Time Handling ✓
-- Supplier lead times in all calculations
-- Dynamic reorder points consider delivery time
-- Risk assessment based on lead-time urgency
+### ✅ Realistic Lead-Time Handling
+- Supplier lead times: 3-14 days range
+- Forecast covers lead time + buffer
+- Dynamic ROP = Expected demand during lead time + Safety stock
+- Risk assessment: "Days until stockout" vs lead time
 
-### Bonus: Supplier Selection ⭐
-- If time permits: multi-supplier optimization
-- Cost vs. lead-time trade-offs
-- Emergency supplier selection
-
----
-
-## 📞 Next Steps
-
-### Before Starting Implementation
-
-1. **Review all documentation**:
-   - PROJECT_SPEC.md
-   - IMPLEMENTATION_PLAN.md
-   - TASK_PLAN.md
-   - TECHNICAL_ARCHITECTURE.md
-
-2. **Confirm understanding**:
-   - Architecture makes sense
-   - Time estimates are realistic
-   - Priorities are clear
-
-3. **Set up environment**:
-   - PostgreSQL running
-   - Python environment ready
-   - Node.js installed
-
-4. **Start with Phase 1, Task P1.1.1**:
-   - Initialize project structure
-   - Follow task plan sequentially
-
-### During Implementation
-
-- **Preserve working demo** at all times
-- **Test after each phase**
-- **Adjust priorities** if time becomes tight
-- **Focus on critical path** (P0 tasks)
-- **Document as you build**
-
-### Before Demo
-
-- **Practice demo 3+ times**
-- **Reset database and test reload**
-- **Prepare presentation slides**
-- **Verify all metrics are real** (not fabricated)
+### 🌟 Bonus: Supplier Selection
+- Multi-supplier database
+- Cost vs lead-time trade-offs
+- Primary supplier logic
+- Extensible for optimization
 
 ---
 
-## 📊 Key Metrics for Demo
+## 🎬 Demo Scenario
 
-**Show these numbers** (from actual simulation):
+**Product:** SKU-004 (Wireless Mouse)  
+**Scenario:** Demand spike from 20 → 50 units/day
 
-| Metric | Fixed Threshold | StockPilot | Improvement |
-|--------|----------------|------------|-------------|
-| Stockouts | 3 | 0 | 100% |
-| Service Level | 87% | 100% | +13% |
-| Avg Inventory | 245 units | 198 units | -19% |
-| Emergency Orders | 2 | 0 | 100% |
+### Fixed Threshold System:
+- Reorder point: 100 units (static)
+- Reacts only when stock drops below 100
+- **Result:** 3 stockouts ❌
 
-*(Example values - actual values will come from simulation)*
-
----
-
-## 🎯 Vision Statement
-
-**Traditional inventory systems wait for problems.**  
-**StockPilot predicts and prevents them.**
-
-By combining pattern recognition, predictive analytics, and intelligent automation with human oversight, StockPilot transforms reactive inventory management into proactive risk mitigation.
+### StockPilot:
+- Detects 27% demand increase
+- Forecasts continued growth
+- Calculates dynamic ROP: 378 units
+- Predicts stockout in 3.9 days (lead time is 7 days!)
+- Generates PO for 950 units BEFORE stockout
+- **Result:** 0 stockouts ✅
 
 ---
 
-## 📝 License & Acknowledgments
+## 🏆 Why StockPilot Wins
 
-Built for Hack the Horizon 2.0 - Smart Automation Track  
-Problem Statement: HTH-SA-03
-
-**Technologies**:
-- FastAPI, React, PostgreSQL
-- Material-UI, Recharts
-- Composio Platform API
-
----
-
-## 🔗 Quick Links
-
-- [Full Project Specification](./PROJECT_SPEC.md)
-- [Implementation Plan (5 Phases)](./IMPLEMENTATION_PLAN.md)
-- [Detailed Task Breakdown](./TASK_PLAN.md)
-- [Technical Architecture](./TECHNICAL_ARCHITECTURE.md)
+1. **Proactive, not reactive** - Prevents problems before they occur
+2. **Pattern-aware** - Learns from actual demand behavior
+3. **Explainable** - Every decision has mathematical reasoning
+4. **Proven improvement** - Quantified via simulation
+5. **Human-controlled** - Automation with accountability
+6. **Production-ready architecture** - Agent/Skill/Tool/MCP pattern
 
 ---
 
-**Ready to build?** Start with Phase 1, Task P1.1.1 in TASK_PLAN.md
+## 📝 Project Structure
 
-**Questions?** Review the technical architecture for implementation details.
-
-**Behind schedule?** Check the "Risk Mitigation & Simplification Options" section in TECHNICAL_ARCHITECTURE.md
+```
+stockpilot/
+├── backend/
+│   ├── agents/          # Decision orchestration
+│   ├── skills/          # Business capabilities
+│   ├── tools/           # Typed operations
+│   ├── workflows/       # n8n integration
+│   ├── mcp/             # External system boundary
+│   ├── models/          # Database models
+│   ├── analytics/       # Pattern/forecast/risk engines
+│   ├── simulation/      # Baseline comparison
+│   ├── api/             # FastAPI routes
+│   ├── assistant/       # LLM assistant (optional)
+│   └── data/            # Synthetic data generator
+└── frontend/
+    └── src/
+        ├── components/
+        ├── pages/
+        └── services/
+```
 
 ---
 
-*Last Updated: 2026-09-24*
+## 🔮 Future Roadmap
+
+- Multi-warehouse optimization
+- Supplier performance tracking
+- Cost optimization algorithms
+- Mobile app for approvals
+- ERP system integration (SAP, Oracle)
+- Advanced seasonality modeling
+- Predictive supplier risk management
+- Carbon footprint optimization
+
+---
+
+## 👥 Team
+
+**Built for Hack the Horizon 2.0**
+
+---
+
+## 📄 License
+
+MIT License
+
+---
+
+## 🙏 Acknowledgments
+
+- FastAPI for excellent Python web framework
+- Material-UI for React components
+- Recharts for data visualization
+- n8n for workflow automation
+- Ollama for local LLM inference
+
+---
+
+**Built with ❤️ for Smart Automation**
+
+*StockPilot: Predict. Replenish. Automate.*
