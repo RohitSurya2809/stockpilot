@@ -36,7 +36,7 @@ export const inventoryApi = {
 
 export const analysisApi = {
   // Analyze single SKU
-  analyze: async (skuId: string): Promise<AnalysisResult> => {
+  analyze: async (skuId: string) => {
     const response = await api.post(`/analysis/${skuId}/complete`);
     return response.data;
   },

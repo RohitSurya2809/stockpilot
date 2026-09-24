@@ -23,15 +23,24 @@ export default function Analysis() {
       setLoading(true);
       setError(null);
       const data = await analysisApi.analyze(skuId);
+      const risk = data.risk_assessment.data;
+      const stockout = risk.stockout_assessment || {};
+      const belowROP = (data.current_inventory || 0) < (risk.dynamic_reorder_point || 0);
 
-      // Transform nested data structure to flat structure
-      const transformedData = {
-        ...data,
+      const transformedData: AnalysisResult = {
+        sku_id: data.sku_id,
+        needs_reorder: belowROP,
+        reasoning: stockout.explanation || risk.recommended_action || '',
         pattern_analysis: data.pattern_analysis.data,
         forecast: data.forecast.data,
         reorder_point: data.dynamic_reorder_point.data,
-        risk_assessment: data.risk_assessment.data,
-        recommended_order: null, // Not in complete analysis response
+        risk_assessment: {
+          risk_level: risk.overall_risk_level || 'medium',
+          days_until_stockout: stockout.days_until_stockout ?? 0,
+          stockout_probability: stockout.stockout_probability ?? 0,
+          recommended_action: stockout.recommended_action || risk.recommended_action || '',
+        },
+        recommended_order: null,
       };
 
       setResult(transformedData);
