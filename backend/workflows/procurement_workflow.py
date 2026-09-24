@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 
 from models import SKU, Inventory, SalesHistory, PurchaseOrder, Supplier, SKUSupplier
 from analytics.demand_pattern_analyzer import analyze_trend, detect_seasonality, calculate_volatility
-from analytics.forecaster import forecast_demand
+from analytics.hybrid_forecaster import hybrid_forecast_demand
 from analytics.reorder_calculator import calculate_dynamic_reorder_point, calculate_order_quantity
 from analytics.risk_engine import assess_stockout_risk
 
@@ -134,12 +134,23 @@ class ProcurementWorkflow:
             "volatility": volatility
         }
 
-        # Step 3: Forecast
-        forecast_result = forecast_demand(
-            daily_demand,
+        # Step 3: Forecast (using hybrid ML + statistical)
+        hybrid_result = hybrid_forecast_demand(
+            sales_data=daily_demand,
             forecast_horizon_days=forecast_horizon,
-            moving_avg_window=min(14, len(daily_demand))
+            moving_avg_window=min(14, len(daily_demand)),
+            use_ml=True
         )
+
+        # Extract selected forecast for compatibility
+        forecast_result = {
+            'forecasts': hybrid_result['selected_forecast']['forecasts'],
+            'method': hybrid_result['selected_forecast']['method'],
+            'confidence_level': hybrid_result['selected_forecast']['confidence_level'],
+            'source': hybrid_result['selected_forecast']['source'],
+            'ml_available': hybrid_result.get('ml_forecast', {}).get('available', False),
+            'hybrid_data': hybrid_result  # Full hybrid data for agents
+        }
 
         # Step 4: Get supplier lead time
         primary_supplier = (

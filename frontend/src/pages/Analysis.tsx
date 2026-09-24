@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { procurementApi } from '../services/api';
 import type { AnalysisResult } from '../types';
+import ForecastChart from '../components/ForecastChart';
 import '../styles/Analysis.css';
 
 export default function Analysis() {
@@ -137,6 +138,27 @@ export default function Analysis() {
             {/* Forecast */}
             <div className="result-card">
               <h4>Forecast</h4>
+
+              {/* ML Badge */}
+              {result.forecast.ml_available && result.forecast.ml_metrics && (
+                <div className="ml-badge-container">
+                  <span className="ml-badge">
+                    🤖 ML: {result.forecast.ml_metrics.model_name}
+                  </span>
+                  <span className="ml-source-badge">
+                    Source: {result.forecast.source === 'ml' ? 'Machine Learning' : 'Statistical'}
+                  </span>
+                </div>
+              )}
+
+              {!result.forecast.ml_available && (
+                <div className="ml-badge-container">
+                  <span className="statistical-badge">
+                    📊 Statistical Forecast
+                  </span>
+                </div>
+              )}
+
               <div className="metric-row">
                 <span className="metric-label">Method:</span>
                 <span className="metric-value">{result.forecast.method}</span>
@@ -147,6 +169,31 @@ export default function Analysis() {
                   {(result.forecast.confidence_level * 100).toFixed(0)}%
                 </span>
               </div>
+
+              {/* ML Validation Metrics */}
+              {result.forecast.ml_available && result.forecast.ml_metrics && (
+                <>
+                  <div className="metric-row">
+                    <span className="metric-label">Validation MAE:</span>
+                    <span className="metric-value">
+                      {result.forecast.ml_metrics.val_mae.toFixed(2)} units
+                    </span>
+                  </div>
+                  <div className="metric-row">
+                    <span className="metric-label">Validation RMSE:</span>
+                    <span className="metric-value">
+                      {result.forecast.ml_metrics.val_rmse.toFixed(2)} units
+                    </span>
+                  </div>
+                  <div className="metric-row">
+                    <span className="metric-label">Training Data:</span>
+                    <span className="metric-value">
+                      {result.forecast.ml_metrics.train_size} samples
+                    </span>
+                  </div>
+                </>
+              )}
+
               <div className="metric-row">
                 <span className="metric-label">Forecast Horizon:</span>
                 <span className="metric-value">{result.forecast.forecasts.length} days</span>
@@ -246,6 +293,13 @@ export default function Analysis() {
               <button className="btn-primary">Generate Purchase Order</button>
             </div>
           )}
+
+          {/* Forecast Visualization */}
+          <ForecastChart
+            forecasts={result.forecast.forecasts}
+            mlAvailable={result.forecast.ml_available || false}
+            confidence={result.forecast.confidence_level}
+          />
         </div>
       )}
     </div>

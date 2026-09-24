@@ -1,0 +1,121 @@
+.intelligence-indicator {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 2px solid #3b82f6;
+  border-radius: 0.5rem;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.1);
+}
+
+.intel-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.intel-icon {
+  font-size: 1.5rem;
+}
+
+.intel-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e40af;
+}
+
+.analyzing-dot {
+  width: 8px;
+  height: 8px;
+  background: #3b82f6;
+  border-radius: 50%;
+  animation: pulse 1.5s ease-in-out infinite;
+  margin-left: auto;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
+}
+
+.intel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.intel-recommendation {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #1e3a8a;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 0.375rem;
+  border-left: 4px solid #3b82f6;
+}
+
+.intel-calculation {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 0.375rem;
+}
+
+.calc-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.calc-label {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.calc-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.calc-value.bold {
+  color: #2563eb;
+  font-size: 1.125rem;
+}
+
+.calc-value.danger {
+  color: #dc2626;
+}
+
+.calc-value.success {
+  color: #059669;
+}
+
+.intel-prediction {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.625rem;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+}
+
+.prediction-label {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.prediction-value {
+  font-weight: 700;
+  color: #1e293b;
+}

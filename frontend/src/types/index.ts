@@ -53,6 +53,15 @@ export interface ForecastResult {
   forecasts: number[];
   method: string;
   confidence_level: number;
+  source?: string;
+  ml_available?: boolean;
+  ml_metrics?: {
+    model_name: string;
+    val_mae: number;
+    val_rmse: number;
+    train_size: number;
+    val_size: number;
+  };
 }
 
 export interface ReorderPointResult {

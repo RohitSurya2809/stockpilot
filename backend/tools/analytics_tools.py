@@ -9,7 +9,7 @@ from pydantic import Field
 
 from tools.base import Tool, ToolInput, ToolOutput, tool_registry
 from analytics.demand_pattern_analyzer import analyze_trend, detect_seasonality, calculate_volatility
-from analytics.forecaster import forecast_demand
+from analytics.hybrid_forecaster import hybrid_forecast_demand
 from analytics.reorder_calculator import calculate_dynamic_reorder_point
 from analytics.risk_engine import assess_stockout_risk
 
@@ -43,6 +43,11 @@ class ForecastDemandOutput(ToolOutput):
     forecasts: Optional[List[float]] = None
     method: Optional[str] = None
     confidence_level: Optional[float] = None
+    ml_available: Optional[bool] = None
+    ml_model_name: Optional[str] = None
+    ml_val_mae: Optional[float] = None
+    ml_val_rmse: Optional[float] = None
+    forecast_source: Optional[str] = None  # 'ml' or 'statistical'
 
 
 class CalculateROPInput(ToolInput):
@@ -130,9 +135,13 @@ class AnalyzePatternTool(Tool):
 
 class ForecastDemandTool(Tool):
     """
-    Forecasts future demand
+    Forecasts future demand using hybrid ML + statistical methods
 
-    Method: Moving average + trend adjustment + seasonality
+    Methods:
+    - ML: RandomForestRegressor (when >= 30 days data available)
+    - Statistical: Moving average + trend adjustment + seasonality (fallback)
+
+    Returns validation metrics (MAE, RMSE) when ML is used
     """
 
     @property
@@ -145,18 +154,32 @@ class ForecastDemandTool(Tool):
 
     def _execute(self, input_data: ForecastDemandInput) -> ForecastDemandOutput:
         try:
-            forecast_result = forecast_demand(
+            # Use hybrid forecaster (statistical + ML)
+            hybrid_result = hybrid_forecast_demand(
                 sales_data=input_data.sales_data,
                 forecast_horizon_days=input_data.forecast_horizon_days,
-                moving_avg_window=input_data.moving_avg_window
+                moving_avg_window=input_data.moving_avg_window,
+                use_ml=True
             )
+
+            # Extract selected forecast (ML or statistical fallback)
+            selected = hybrid_result['selected_forecast']
+
+            # Extract ML metrics if available
+            ml_forecast = hybrid_result.get('ml_forecast', {})
+            ml_available = ml_forecast.get('available', False)
 
             return ForecastDemandOutput(
                 success=True,
-                data=forecast_result,
-                forecasts=forecast_result['forecasts'],
-                method=forecast_result['method'],
-                confidence_level=forecast_result['confidence_level']
+                data=hybrid_result,
+                forecasts=selected['forecasts'],
+                method=selected['method'],
+                confidence_level=selected['confidence_level'],
+                ml_available=ml_available,
+                ml_model_name=ml_forecast.get('model_name') if ml_available else None,
+                ml_val_mae=ml_forecast.get('val_mae') if ml_available else None,
+                ml_val_rmse=ml_forecast.get('val_rmse') if ml_available else None,
+                forecast_source=selected['source']
             )
 
         except Exception as e:

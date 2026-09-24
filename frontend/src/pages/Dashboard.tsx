@@ -73,24 +73,101 @@ export default function Dashboard() {
         </button>
       </div>
 
-      <div className="stats-grid">
-        <div className="stat-card">
-          <h3>Total SKUs</h3>
-          <p className="stat-value">{inventory.length}</p>
+      {/* StockPilot Intelligence Section */}
+      <div className="intelligence-section">
+        <div className="section-header">
+          <div className="section-title">
+            <span className="intelligence-icon">🤖</span>
+            <h3>StockPilot Intelligence</h3>
+          </div>
+          <span className="section-badge">ML-Powered Insights</span>
         </div>
-        <div className="stat-card critical">
-          <h3>Critical Risk</h3>
-          <p className="stat-value">{criticalCount}</p>
+        <div className="stats-grid intelligence-grid">
+          <div className="stat-card critical">
+            <div className="stat-header">
+              <span className="stat-icon">🚨</span>
+              <h3>Critical Risk</h3>
+            </div>
+            <p className="stat-value">{criticalCount}</p>
+            <p className="stat-detail">Immediate attention needed</p>
+          </div>
+          <div className="stat-card high">
+            <div className="stat-header">
+              <span className="stat-icon">⚠️</span>
+              <h3>High Risk</h3>
+            </div>
+            <p className="stat-value">{highCount}</p>
+            <p className="stat-detail">Monitor closely</p>
+          </div>
+          <div className="stat-card intelligence">
+            <div className="stat-header">
+              <span className="stat-icon">📊</span>
+              <h3>ML Forecast Active</h3>
+            </div>
+            <p className="stat-value">{inventory.length}</p>
+            <p className="stat-detail">RandomForestRegressor</p>
+          </div>
+          <div className="stat-card intelligence">
+            <div className="stat-header">
+              <span className="stat-icon">🎯</span>
+              <h3>Dynamic ROP</h3>
+            </div>
+            <p className="stat-value">
+              {inventory.filter(s => s.current_stock < s.reorder_point).length}
+            </p>
+            <p className="stat-detail">Below reorder point</p>
+          </div>
         </div>
-        <div className="stat-card high">
-          <h3>High Risk</h3>
-          <p className="stat-value">{highCount}</p>
+      </div>
+
+      {/* Operational Data Section */}
+      <div className="operational-section">
+        <div className="section-header">
+          <div className="section-title">
+            <span className="operational-icon">📦</span>
+            <h3>Operational Data</h3>
+          </div>
+          <span className="section-badge operational">Database View</span>
         </div>
-        <div className="stat-card">
-          <h3>Total Stock</h3>
-          <p className="stat-value">
-            {inventory.reduce((sum, sku) => sum + sku.current_stock, 0).toLocaleString()}
-          </p>
+        <div className="stats-grid operational-grid">
+          <div className="stat-card operational">
+            <div className="stat-header">
+              <h3>Total SKUs</h3>
+            </div>
+            <p className="stat-value">{inventory.length}</p>
+            <p className="stat-detail">Products tracked</p>
+          </div>
+          <div className="stat-card operational">
+            <div className="stat-header">
+              <h3>Total Stock</h3>
+            </div>
+            <p className="stat-value">
+              {inventory.reduce((sum, sku) => sum + sku.current_stock, 0).toLocaleString()}
+            </p>
+            <p className="stat-detail">Units in inventory</p>
+          </div>
+          <div className="stat-card operational">
+            <div className="stat-header">
+              <h3>Avg Stock Level</h3>
+            </div>
+            <p className="stat-value">
+              {inventory.length > 0
+                ? Math.round(inventory.reduce((sum, sku) => sum + sku.current_stock, 0) / inventory.length)
+                : 0}
+            </p>
+            <p className="stat-detail">Units per SKU</p>
+          </div>
+          <div className="stat-card operational">
+            <div className="stat-header">
+              <h3>Avg Demand</h3>
+            </div>
+            <p className="stat-value">
+              {inventory.length > 0
+                ? (inventory.reduce((sum, sku) => sum + sku.recent_daily_demand, 0) / inventory.length).toFixed(1)
+                : 0}
+            </p>
+            <p className="stat-detail">Units/day avg</p>
+          </div>
         </div>
       </div>
 

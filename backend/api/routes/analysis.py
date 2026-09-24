@@ -12,7 +12,8 @@ from datetime import date, timedelta
 
 from models import get_db, SKU, Inventory, SalesHistory, SKUSupplier, Supplier
 from analytics.demand_pattern_analyzer import analyze_demand_pattern, generate_pattern_summary
-from analytics.forecaster import forecast_demand, generate_forecast_summary
+from analytics.hybrid_forecaster import hybrid_forecast_demand
+from analytics.forecaster import generate_forecast_summary
 from analytics.reorder_calculator import calculate_dynamic_reorder_point, generate_reorder_explanation
 from analytics.risk_engine import comprehensive_risk_assessment, generate_risk_summary
 from api.utils import convert_numpy_types
@@ -104,14 +105,37 @@ async def forecast_sku_demand(
 
     sales_data = [float(s.quantity_sold) for s in sales]
 
-    # Generate forecast
-    forecast_result = forecast_demand(
+    # Generate hybrid forecast (ML + statistical)
+    hybrid_result = hybrid_forecast_demand(
         sales_data=sales_data,
         forecast_horizon_days=horizon_days,
         moving_avg_window=14,
-        include_trend=True,
-        include_seasonality=True
+        use_ml=True
     )
+
+    # Extract selected forecast and ML metrics
+    selected = hybrid_result['selected_forecast']
+    ml_forecast = hybrid_result.get('ml_forecast', {})
+
+    # Build forecast_result for compatibility with generate_forecast_summary
+    forecast_result = {
+        'forecasts': selected['forecasts'],
+        'method': selected['method'],
+        'confidence_level': selected['confidence_level'],
+        'source': selected['source'],
+        'ml_available': ml_forecast.get('available', False),
+        'forecast_horizon_days': horizon_days  # Required by generate_forecast_summary
+    }
+
+    # Add ML metrics if available
+    if ml_forecast.get('available'):
+        forecast_result['ml_metrics'] = {
+            'model_name': ml_forecast['model_name'],
+            'val_mae': ml_forecast['val_mae'],
+            'val_rmse': ml_forecast['val_rmse'],
+            'train_size': ml_forecast['train_size'],
+            'val_size': ml_forecast['val_size']
+        }
 
     if 'error' in forecast_result:
         raise HTTPException(status_code=400, detail=forecast_result['error'])
@@ -122,7 +146,8 @@ async def forecast_sku_demand(
     return {
         'sku_id': sku_id,
         'forecast': forecast_result,
-        'summary': summary
+        'summary': summary,
+        'hybrid_data': hybrid_result  # Include full hybrid data for agents
     }
 
 
@@ -343,13 +368,37 @@ async def complete_sku_analysis(
     pattern_analysis = analyze_demand_pattern(sales_data)
     pattern_summary = generate_pattern_summary(pattern_analysis)
 
-    # 2. Forecast
-    forecast_result = forecast_demand(
+    # 2. Hybrid forecast (ML + statistical)
+    hybrid_result = hybrid_forecast_demand(
         sales_data=sales_data,
         forecast_horizon_days=forecast_horizon,
-        include_trend=True,
-        include_seasonality=True
+        use_ml=True
     )
+
+    # Extract selected forecast and ML metrics
+    selected = hybrid_result['selected_forecast']
+    ml_forecast = hybrid_result.get('ml_forecast', {})
+
+    # Build forecast_result for compatibility
+    forecast_result = {
+        'forecasts': selected['forecasts'],
+        'method': selected['method'],
+        'confidence_level': selected['confidence_level'],
+        'source': selected['source'],
+        'ml_available': ml_forecast.get('available', False),
+        'forecast_horizon_days': forecast_horizon  # Required by generate_forecast_summary
+    }
+
+    # Add ML metrics if available
+    if ml_forecast.get('available'):
+        forecast_result['ml_metrics'] = {
+            'model_name': ml_forecast['model_name'],
+            'val_mae': ml_forecast['val_mae'],
+            'val_rmse': ml_forecast['val_rmse'],
+            'train_size': ml_forecast['train_size'],
+            'val_size': ml_forecast['val_size']
+        }
+
     forecast_summary = generate_forecast_summary(forecast_result)
 
     # 3. Dynamic ROP
