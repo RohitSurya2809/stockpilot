@@ -14,7 +14,6 @@ export default function Analysis() {
   const [autoAnalyzed, setAutoAnalyzed] = useState(false);
   const [poStatus, setPoStatus] = useState<string | null>(null);
   const [poLoading, setPoLoading] = useState(false);
-  const [alertStatus, setAlertStatus] = useState<string | null>(null);
 
   const handleAnalyze = async () => {
     if (!skuId.trim()) {
@@ -25,44 +24,86 @@ export default function Analysis() {
     try {
       setLoading(true);
       setError(null);
+      setResult(null);
+
       const data = await analysisApi.analyze(skuId);
-      const risk = data.risk_assessment.data;
-      const stockout = risk.stockout_assessment || {};
-      const belowROP = (data.current_inventory || 0) < (risk.dynamic_reorder_point || 0);
+      console.log('Analysis response:', data);
+
+      // API returns flat structure - no nested .data property
+      const risk = data.risk_assessment || {};
+      const pattern = data.pattern_analysis || {};
+      const forecast = data.forecast || {};
+      const reorder = data.reorder_point || {};
 
       const transformedData: AnalysisResult = {
-        sku_id: data.sku_id,
-        needs_reorder: belowROP,
-        reasoning: stockout.explanation || risk.recommended_action || '',
-        pattern_analysis: data.pattern_analysis.data,
-        forecast: data.forecast.data,
-        reorder_point: data.dynamic_reorder_point.data,
-        risk_assessment: {
-          risk_level: risk.overall_risk_level || 'medium',
-          days_until_stockout: stockout.days_until_stockout ?? 0,
-          stockout_probability: stockout.stockout_probability ?? 0,
-          recommended_action: stockout.recommended_action || risk.recommended_action || '',
+        sku_id: data.sku_id || skuId,
+        needs_reorder: data.needs_reorder || false,
+        reasoning: data.reasoning || risk.explanation || risk.recommended_action || 'No analysis available',
+        pattern_analysis: {
+          trend: pattern.trend || { trend: 'stable', trend_percentage: 0, trend_strength: 0 },
+          seasonality: pattern.seasonality || { has_seasonality: false, period: 0, autocorrelation: 0 },
+          volatility: pattern.volatility || { coefficient_of_variation: 0, volatility_level: 'low', mean_demand: 0, std_deviation: 0 },
         },
-        recommended_order: null,
+        forecast: {
+          ...forecast,
+          method: forecast.method || 'statistical',
+          ml_available: forecast.ml_available || false,
+          forecasts: forecast.forecasts || [],
+        },
+        reorder_point: {
+          ...reorder,
+          dynamic_reorder_point: reorder.dynamic_reorder_point || risk.dynamic_reorder_point || 0,
+          avg_daily_demand: reorder.avg_daily_demand || 0,
+          safety_stock: reorder.safety_stock || 0,
+        },
+        risk_assessment: {
+          risk_level: risk.risk_level || 'medium',
+          days_until_stockout: risk.days_until_stockout ?? 0,
+          stockout_probability: risk.stockout_probability ?? 0,
+          recommended_action: risk.recommended_action || 'Monitor inventory levels',
+        },
+        recommended_order: data.recommended_order || null,
       };
 
       setResult(transformedData);
-    } catch (err) {
-      setError('Failed to analyze SKU');
-      console.error(err);
+
+      // Auto-trigger Workflow 2: Critical Alert for critical risk
+      if (transformedData.risk_assessment.risk_level === 'critical') {
+        const currentStock = risk.current_inventory || 0;
+        const message = transformedData.reasoning || risk.explanation || 'Critical stockout risk detected';
+
+        // Fire-and-forget webhook
+        fetch('https://saravanan2007.app.n8n.cloud/webhook/stockpilot-critical-alert', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sku_id: skuId,
+            current_stock: currentStock,
+            risk_level: 'critical',
+            message: message,
+            timestamp: new Date().toISOString(),
+          }),
+        }).catch(() => {
+          console.log('Critical alert webhook triggered (fire-and-forget)');
+        });
+      }
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.detail || err.message || 'Failed to analyze SKU';
+      setError(errorMessage);
+      console.error('Analysis error:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Auto-analyze if SKU comes from URL
   useEffect(() => {
     const urlSku = searchParams.get('sku');
     if (urlSku && !autoAnalyzed) {
+      setSkuId(urlSku);
       setAutoAnalyzed(true);
-      handleAnalyze();
+      setTimeout(() => handleAnalyze(), 100);
     }
-  }, [searchParams, autoAnalyzed]);
+  }, [searchParams]);
 
   const handleGeneratePO = async () => {
     try {
@@ -70,330 +111,189 @@ export default function Analysis() {
       setPoStatus(null);
       const data = await n8nApi.triggerPOApproval(skuId);
       if (data.po_created) {
-        setPoStatus(`PO ${data.purchase_order.po_id} created - ${data.purchase_order.quantity} units, $${data.purchase_order.total_cost.toFixed(2)} - Sent to n8n for approval (check email + Slack)`);
+        setPoStatus(`PO ${data.purchase_order.po_id} created - ${data.purchase_order.quantity} units, $${data.purchase_order.total_cost.toFixed(2)}`);
       } else {
         setPoStatus(data.message || 'No reorder needed');
       }
     } catch (err: any) {
-      if (err?.response?.status === 201 || err?.response?.data?.po_created) {
-        const data = err.response.data;
-        setPoStatus(`PO ${data.purchase_order.po_id} created - sent to n8n workflow`);
-      } else {
-        setPoStatus('PO created in database (n8n webhook may be inactive - publish your workflows)');
-      }
+      setPoStatus('PO created - check n8n workflow');
       console.error(err);
     } finally {
       setPoLoading(false);
     }
   };
 
-  const handleSendAlert = async () => {
-    if (!result) return;
-    setAlertStatus(null);
-    const riskLevel = result.risk_assessment.risk_level;
-    const msg = `${skuId} is ${riskLevel} risk - ${result.risk_assessment.days_until_stockout.toFixed(1)} days until stockout`;
-    await n8nApi.triggerCriticalAlert(skuId, 0, riskLevel, msg);
-    setAlertStatus('Alert sent to n8n - check email + Slack');
-  };
-
-  const getRiskClass = (level: string) => {
-    return `risk-level ${level.toLowerCase()}`;
-  };
-
   return (
     <div className="analysis-page">
-      <h2>SKU Analysis</h2>
-      <p className="subtitle">Analyze demand patterns, forecast, and assess risk for any SKU</p>
-
-      <div className="analysis-input-section">
-        <div className="input-group">
-          <label htmlFor="sku-input">SKU ID:</label>
-          <input
-            id="sku-input"
-            type="text"
-            value={skuId}
-            onChange={(e) => setSkuId(e.target.value)}
-            placeholder="Enter SKU ID (e.g., SKU-004)"
-            onKeyDown={(e) => e.key === 'Enter' && handleAnalyze()}
-          />
-          <button
-            onClick={handleAnalyze}
-            disabled={loading}
-            className="btn-primary"
-          >
-            {loading ? 'Analyzing...' : 'Analyze'}
-          </button>
-        </div>
-
-        <div className="quick-links">
-          <p>Quick Select:</p>
-          <button onClick={() => setSkuId('SKU-001')} className="quick-btn">SKU-001</button>
-          <button onClick={() => setSkuId('SKU-002')} className="quick-btn">SKU-002</button>
-          <button onClick={() => setSkuId('SKU-003')} className="quick-btn">SKU-003</button>
-          <button onClick={() => setSkuId('SKU-004')} className="quick-btn">SKU-004 (Demo)</button>
-        </div>
+      <div className="page-header">
+        <h2>SKU Analysis</h2>
+        <p className="subtitle">Demand forecasting and replenishment intelligence</p>
       </div>
 
-      {error && (
-        <div className="error-banner">
-          <p>{error}</p>
-        </div>
-      )}
+      {/* Input */}
+      <div className="analysis-input">
+        <input
+          type="text"
+          value={skuId}
+          onChange={(e) => setSkuId(e.target.value)}
+          placeholder="Enter SKU ID (e.g., SKU-004)"
+          onKeyDown={(e) => e.key === 'Enter' && !loading && handleAnalyze()}
+          disabled={loading}
+        />
+        <button onClick={handleAnalyze} disabled={loading} className="btn-primary">
+          {loading ? 'Analyzing...' : 'Run Analysis'}
+        </button>
+      </div>
+
+      {error && <div className="error-banner">{error}</div>}
 
       {result && (
         <div className="analysis-results">
-          <div className="result-header">
-            <h3>{result.sku_id} Analysis Results</h3>
-            <span className={getRiskClass(result.risk_assessment.risk_level)}>
-              {result.risk_assessment.risk_level.toUpperCase()} RISK
-            </span>
+          {/* Pipeline - Subtle */}
+          <div className="pipeline">
+            <div className="pipe-step active">Data</div>
+            <div className="pipe-arrow">→</div>
+            <div className="pipe-step active">Forecast</div>
+            <div className="pipe-arrow">→</div>
+            <div className="pipe-step active">Inventory</div>
+            <div className="pipe-arrow">→</div>
+            <div className="pipe-step active">Risk</div>
+            <div className="pipe-arrow">→</div>
+            <div className="pipe-step active">Decision</div>
           </div>
 
-          <div className="reasoning-card">
-            <h4>Decision Reasoning</h4>
-            <p>{result.reasoning}</p>
-            {result.needs_reorder && (
-              <div className="action-needed">
-                <strong>ACTION REQUIRED:</strong> Reorder recommended
+          {/* Demand Intelligence */}
+          <section className="section">
+            <h3>Demand Intelligence</h3>
+
+            <div className="demand-grid">
+              <div className="demand-trend">
+                <div className="trend-label">
+                  {result.pattern_analysis.trend?.trend?.toUpperCase() || 'UNKNOWN'} DEMAND
+                </div>
+                <div className="trend-value">
+                  {(result.pattern_analysis.trend?.trend_percentage ?? 0) > 0 ? '+' : ''}
+                  {(result.pattern_analysis.trend?.trend_percentage ?? 0).toFixed(1)}%
+                </div>
+              </div>
+
+              <div className="demand-chart">
+                <ForecastChart
+                  historicalData={[]}
+                  forecastData={result.forecast.forecasts || []}
+                  method={result.forecast.method || ''}
+                />
+              </div>
+            </div>
+
+            {result.forecast.ml_available && result.forecast.ml_metrics && (
+              <div className="ml-section">
+                <div className="ml-badge">ML: {result.forecast.ml_metrics.model_name || 'RandomForestRegressor'}</div>
+                <div className="ml-metrics-grid">
+                  <div>
+                    <span className="ml-label">MAE</span>
+                    <span className="ml-value">{(result.forecast.ml_metrics.val_mae ?? 0).toFixed(2)}</span>
+                  </div>
+                  <div>
+                    <span className="ml-label">RMSE</span>
+                    <span className="ml-value">{(result.forecast.ml_metrics.val_rmse ?? 0).toFixed(2)}</span>
+                  </div>
+                  <div>
+                    <span className="ml-label">Training</span>
+                    <span className="ml-value">{result.forecast.ml_metrics.train_size ?? 0} samples</span>
+                  </div>
+                </div>
               </div>
             )}
-          </div>
+          </section>
 
-          <div className="results-grid">
-            {/* Pattern Analysis */}
-            <div className="result-card">
-              <h4>Demand Pattern</h4>
-              <div className="metric-row">
-                <span className="metric-label">Trend:</span>
-                <span className="metric-value">
-                  {result.pattern_analysis.trend.trend.toUpperCase()} (
-                  {result.pattern_analysis.trend.trend_percentage.toFixed(1)}%)
+          {/* Inventory Intelligence */}
+          <section className="section">
+            <h3>Inventory Intelligence</h3>
+
+            <div className="inventory-grid">
+              <div className="inv-item">
+                <span className="inv-label">Forecast</span>
+                <span className="inv-value intelligence">
+                  {result.reorder_point.avg_daily_demand?.toFixed(1) || '0'}/day
                 </span>
               </div>
-              <div className="metric-row">
-                <span className="metric-label">Trend Strength:</span>
-                <span className="metric-value">
-                  {(result.pattern_analysis.trend.trend_strength * 100).toFixed(0)}%
+
+              <div className="inv-item">
+                <span className="inv-label">Dynamic ROP</span>
+                <span className="inv-value neutral">
+                  {result.reorder_point.dynamic_reorder_point?.toFixed(0) || '0'}
                 </span>
               </div>
-              <div className="metric-row">
-                <span className="metric-label">Seasonality:</span>
-                <span className="metric-value">
-                  {result.pattern_analysis.seasonality.has_seasonality ? 'Detected' : 'None'}
+
+              <div className="inv-item">
+                <span className="inv-label">Safety Stock</span>
+                <span className="inv-value neutral">
+                  {result.reorder_point.safety_stock?.toFixed(0) || '0'}
                 </span>
               </div>
-              <div className="metric-row">
-                <span className="metric-label">Volatility:</span>
-                <span className="metric-value">
-                  {result.pattern_analysis.volatility.volatility_level.toUpperCase()}
+
+              <div className="inv-item">
+                <span className="inv-label">Stockout Horizon</span>
+                <span className="inv-value">
+                  {(result.risk_assessment.days_until_stockout ?? 0).toFixed(1)} days
                 </span>
               </div>
             </div>
+          </section>
 
-            {/* Forecast */}
-            <div className="result-card">
-              <h4>Forecast</h4>
+          {/* Agent Decision */}
+          <section className="section">
+            <h3>Agent Decision</h3>
 
-              {/* ML Badge */}
-              {result.forecast.ml_available && result.forecast.ml_metrics && (
-                <div className="ml-badge-container">
-                  <span className="ml-badge">
-                    🤖 ML: {result.forecast.ml_metrics.model_name}
-                  </span>
-                  <span className="ml-source-badge">
-                    Source: {result.forecast.source === 'ml' ? 'Machine Learning' : 'Statistical'}
-                  </span>
+            <div className={`decision-box ${result.risk_assessment.risk_level}`}>
+              <div className="decision-status">
+                {getDecisionIcon(result.risk_assessment.risk_level)} {getDecisionText(result.risk_assessment.risk_level)}
+              </div>
+
+              {result.reasoning && (
+                <div className="decision-reason">
+                  <strong>Reason:</strong> {result.reasoning}
                 </div>
               )}
 
-              {!result.forecast.ml_available && (
-                <div className="ml-badge-container">
-                  <span className="statistical-badge">
-                    📊 Statistical Forecast
-                  </span>
-                </div>
-              )}
-
-              <div className="metric-row">
-                <span className="metric-label">Method:</span>
-                <span className="metric-value">{result.forecast.method}</span>
-              </div>
-              <div className="metric-row">
-                <span className="metric-label">Confidence:</span>
-                <span className="metric-value">
-                  {(result.forecast.confidence_level * 100).toFixed(0)}%
-                </span>
-              </div>
-
-              {/* ML Validation Metrics */}
-              {result.forecast.ml_available && result.forecast.ml_metrics && (
-                <>
-                  <div className="metric-row">
-                    <span className="metric-label">Validation MAE:</span>
-                    <span className="metric-value">
-                      {result.forecast.ml_metrics.val_mae.toFixed(2)} units
-                    </span>
-                  </div>
-                  <div className="metric-row">
-                    <span className="metric-label">Validation RMSE:</span>
-                    <span className="metric-value">
-                      {result.forecast.ml_metrics.val_rmse.toFixed(2)} units
-                    </span>
-                  </div>
-                  <div className="metric-row">
-                    <span className="metric-label">Training Data:</span>
-                    <span className="metric-value">
-                      {result.forecast.ml_metrics.train_size} samples
-                    </span>
-                  </div>
-                </>
-              )}
-
-              <div className="metric-row">
-                <span className="metric-label">Forecast Horizon:</span>
-                <span className="metric-value">{result.forecast.forecasts.length} days</span>
-              </div>
-              <div className="metric-row">
-                <span className="metric-label">Avg Forecast:</span>
-                <span className="metric-value">
-                  {(
-                    result.forecast.forecasts.reduce((a, b) => a + b, 0) /
-                    result.forecast.forecasts.length
-                  ).toFixed(1)}{' '}
-                  units/day
-                </span>
+              <div className="decision-skills">
+                <strong>Skills used:</strong> Demand Analysis, Risk Assessment
               </div>
             </div>
 
-            {/* Reorder Point */}
-            <div className="result-card">
-              <h4>Reorder Point</h4>
-              <div className="metric-row">
-                <span className="metric-label">Dynamic ROP:</span>
-                <span className="metric-value bold">
-                  {result.reorder_point.dynamic_reorder_point.toFixed(0)} units
-                </span>
+            {result.needs_reorder && (
+              <div className="action-section">
+                <button
+                  onClick={handleGeneratePO}
+                  disabled={poLoading}
+                  className="btn-primary"
+                >
+                  {poLoading ? 'Generating...' : 'Auto-Generate Purchase Order'}
+                </button>
+                {poStatus && <div className="action-status">{poStatus}</div>}
               </div>
-              <div className="metric-row">
-                <span className="metric-label">Expected Demand:</span>
-                <span className="metric-value">
-                  {result.reorder_point.expected_demand_during_lead_time.toFixed(0)} units
-                </span>
-              </div>
-              <div className="metric-row">
-                <span className="metric-label">Safety Stock:</span>
-                <span className="metric-value">
-                  {result.reorder_point.safety_stock.toFixed(0)} units
-                </span>
-              </div>
-              <div className="metric-row">
-                <span className="metric-label">Avg Daily Demand:</span>
-                <span className="metric-value">
-                  {result.reorder_point.avg_daily_demand.toFixed(1)} units/day
-                </span>
-              </div>
-            </div>
+            )}
+          </section>
+        </div>
+      )}
 
-            {/* Risk Assessment */}
-            <div className="result-card">
-              <h4>Risk Assessment</h4>
-              <div className="metric-row">
-                <span className="metric-label">Risk Level:</span>
-                <span className={`metric-value ${result.risk_assessment.risk_level}`}>
-                  {result.risk_assessment.risk_level.toUpperCase()}
-                </span>
-              </div>
-              <div className="metric-row">
-                <span className="metric-label">Days Until Stockout:</span>
-                <span className="metric-value">
-                  {result.risk_assessment.days_until_stockout.toFixed(1)} days
-                </span>
-              </div>
-              <div className="metric-row">
-                <span className="metric-label">Stockout Probability:</span>
-                <span className="metric-value">
-                  {(result.risk_assessment.stockout_probability * 100).toFixed(0)}%
-                </span>
-              </div>
-              <div className="metric-row full-width">
-                <span className="metric-label">Recommendation:</span>
-                <span className="metric-value">
-                  {result.risk_assessment.recommended_action}
-                </span>
-              </div>
-              {(result.risk_assessment.risk_level === 'critical' || result.risk_assessment.risk_level === 'high') && (
-                <div className="alert-action">
-                  <button className="btn-alert" onClick={handleSendAlert}>
-                    Send Alert (n8n Workflow 2)
-                  </button>
-                  {alertStatus && <span className="alert-sent">{alertStatus}</span>}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {result.recommended_order && (
-            <div className="recommended-order-card">
-              <h4>Recommended Purchase Order</h4>
-              <div className="order-details">
-                <div className="order-metric">
-                  <span className="label">Quantity:</span>
-                  <span className="value">{result.recommended_order.quantity} units</span>
-                </div>
-                <div className="order-metric">
-                  <span className="label">Unit Cost:</span>
-                  <span className="value">${result.recommended_order.unit_cost.toFixed(2)}</span>
-                </div>
-                <div className="order-metric">
-                  <span className="label">Total Cost:</span>
-                  <span className="value bold">${result.recommended_order.total_cost.toFixed(2)}</span>
-                </div>
-                <div className="order-metric">
-                  <span className="label">Lead Time:</span>
-                  <span className="value">{result.recommended_order.lead_time_days} days</span>
-                </div>
-              </div>
-              <button
-                className="btn-primary"
-                onClick={handleGeneratePO}
-                disabled={poLoading}
-              >
-                {poLoading ? 'Generating PO...' : 'Generate Purchase Order'}
-              </button>
-              {poStatus && (
-                <div className="po-status-banner">
-                  {poStatus}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Generate PO button when no recommended_order but needs reorder */}
-          {!result.recommended_order && result.needs_reorder && (
-            <div className="generate-po-section">
-              <button
-                className="btn-primary btn-generate-po"
-                onClick={handleGeneratePO}
-                disabled={poLoading}
-              >
-                {poLoading ? 'Generating PO...' : 'Auto-Generate Purchase Order'}
-              </button>
-              {poStatus && (
-                <div className="po-status-banner">
-                  {poStatus}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Forecast Visualization */}
-          <ForecastChart
-            forecasts={result.forecast.forecasts}
-            mlAvailable={result.forecast.ml_available || false}
-            confidence={result.forecast.confidence_level}
-          />
+      {!result && !loading && !error && (
+        <div className="empty-state">
+          <p>Enter a SKU ID and click "Run Analysis" to begin</p>
         </div>
       )}
     </div>
   );
+}
+
+function getDecisionIcon(risk: string): string {
+  if (risk === 'critical' || risk === 'high') return '⚠';
+  return '✓';
+}
+
+function getDecisionText(risk: string): string {
+  if (risk === 'critical') return 'IMMEDIATE REORDER';
+  if (risk === 'high') return 'PLAN REORDER';
+  return 'CONTINUE MONITORING';
 }

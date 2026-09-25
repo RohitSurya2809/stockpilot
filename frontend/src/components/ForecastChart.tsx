@@ -2,13 +2,15 @@ import { useEffect, useRef } from 'react';
 import '../styles/ForecastChart.css';
 
 interface Props {
-  forecasts: number[];
+  forecastData: number[];
   historicalData?: number[];
-  mlAvailable: boolean;
-  confidence: number;
+  method?: string;
 }
 
-export default function ForecastChart({ forecasts, historicalData = [], mlAvailable, confidence }: Props) {
+export default function ForecastChart({ forecastData, historicalData = [], method = '' }: Props) {
+  const forecasts = Array.isArray(forecastData) ? forecastData : [];
+  const mlAvailable = method.includes('ml') || method.includes('ML');
+  const confidence = 0.85;
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -27,6 +29,15 @@ export default function ForecastChart({ forecasts, historicalData = [], mlAvaila
 
     // Clear canvas
     ctx.clearRect(0, 0, rect.width, rect.height);
+
+    // Safety check
+    if (!forecasts || forecasts.length === 0) {
+      ctx.fillStyle = '#9CA3AF';
+      ctx.font = '14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('No forecast data available', rect.width / 2, rect.height / 2);
+      return;
+    }
 
     // Combine historical and forecast data
     const allData = [...historicalData, ...forecasts];
@@ -178,7 +189,7 @@ export default function ForecastChart({ forecasts, historicalData = [], mlAvaila
         ctx.fillText(label, x, rect.height - padding + 20);
       }
     });
-  }, [forecasts, historicalData, mlAvailable, confidence]);
+  }, [forecastData, historicalData, method]);
 
   return (
     <div className="forecast-chart-container">

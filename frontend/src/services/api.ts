@@ -37,7 +37,7 @@ export const inventoryApi = {
 export const analysisApi = {
   // Analyze single SKU
   analyze: async (skuId: string) => {
-    const response = await api.post(`/analysis/${skuId}/complete`);
+    const response = await api.post(`/procurement/analyze/${skuId}`);
     return response.data;
   },
 

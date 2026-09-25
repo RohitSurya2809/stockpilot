@@ -1,123 +1,305 @@
+/* StockPilot - Focused Enterprise Design with Semantic Colors */
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-:root {
-  --primary: #2563eb;
-  --primary-dark: #1d4ed8;
-  --secondary: #64748b;
-  --success: #10b981;
-  --warning: #f59e0b;
-  --danger: #ef4444;
-  --critical: #dc2626;
-  --bg: #f8fafc;
-  --card-bg: #ffffff;
-  --text: #1e293b;
-  --text-light: #64748b;
-  --border: #e2e8f0;
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+/* ============================================
+   THEME SYSTEM - Light & Dark
+   ============================================ */
+
+:root[data-theme="light"] {
+  /* Base Colors */
+  --bg-page: #F7F8FA;
+  --bg-elevated: #FFFFFF;
+  --bg-subtle: #F1F3F5;
+
+  /* Text */
+  --text-primary: #1C2027;
+  --text-secondary: #4B5563;
+  --text-tertiary: #9CA3AF;
+
+  /* Borders */
+  --border-default: #E5E7EB;
+  --border-subtle: #F3F4F6;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.06);
 }
+
+:root[data-theme="dark"] {
+  /* Base Colors */
+  --bg-page: #0F1115;
+  --bg-elevated: #1A1D23;
+  --bg-subtle: #23272E;
+
+  /* Text */
+  --text-primary: #F9FAFB;
+  --text-secondary: #D1D5DB;
+  --text-tertiary: #6B7280;
+
+  /* Borders */
+  --border-default: #2D3139;
+  --border-subtle: #23272E;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* ============================================
+   SEMANTIC COLORS - Meaning-Based
+   ============================================ */
+
+:root {
+  /* Primary Accent - Muted Blue/Indigo */
+  --accent-primary: #4F46E5;
+  --accent-primary-hover: #4338CA;
+  --accent-primary-subtle: #EEF2FF;
+
+  /* Semantic - Health/Normal */
+  --semantic-healthy: #10B981;
+  --semantic-healthy-bg: #ECFDF5;
+
+  /* Semantic - Warning */
+  --semantic-warning: #F59E0B;
+  --semantic-warning-bg: #FEF3C7;
+
+  /* Semantic - Critical */
+  --semantic-critical: #EF4444;
+  --semantic-critical-bg: #FEE2E2;
+
+  /* Semantic - Intelligence/ML */
+  --semantic-intelligence: #3B82F6;
+  --semantic-intelligence-bg: #DBEAFE;
+
+  /* Semantic - Neutral */
+  --semantic-neutral: #6B7280;
+  --semantic-neutral-bg: #F3F4F6;
+}
+
+/* Dark mode semantic adjustments - FIXED */
+:root[data-theme="dark"] {
+  --accent-primary-subtle: #312E81;
+
+  /* Darker backgrounds, brighter text for dark mode */
+  --semantic-healthy-bg: #064E3B;
+  --semantic-healthy: #34D399;
+
+  --semantic-warning-bg: #78350F;
+  --semantic-warning: #FBBF24;
+
+  --semantic-critical-bg: #7F1D1D;
+  --semantic-critical: #F87171;
+
+  --semantic-intelligence-bg: #1E3A8A;
+  --semantic-intelligence: #60A5FA;
+
+  --semantic-neutral-bg: #374151;
+  --semantic-neutral: #9CA3AF;
+}
+
+/* ============================================
+   SPACING - 8px System
+   ============================================ */
+
+:root {
+  --space-1: 0.25rem;  /* 4px */
+  --space-2: 0.5rem;   /* 8px */
+  --space-3: 0.75rem;  /* 12px */
+  --space-4: 1rem;     /* 16px */
+  --space-5: 1.25rem;  /* 20px */
+  --space-6: 1.5rem;   /* 24px */
+  --space-8: 2rem;     /* 32px */
+  --space-10: 2.5rem;  /* 40px */
+  --space-12: 3rem;    /* 48px */
+
+  --radius: 0.75rem;   /* 12px */
+  --radius-sm: 0.5rem; /* 8px */
+}
+
+/* ============================================
+   BASE STYLES
+   ============================================ */
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  line-height: 1.6;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
+
+/* ============================================
+   TYPOGRAPHY
+   ============================================ */
+
+h1 { font-size: 1.875rem; font-weight: 600; line-height: 1.2; }
+h2 { font-size: 1.5rem; font-weight: 600; line-height: 1.3; }
+h3 { font-size: 1.25rem; font-weight: 600; line-height: 1.4; }
+h4 { font-size: 1rem; font-weight: 600; line-height: 1.5; }
+
+.text-sm { font-size: 0.875rem; }
+.text-xs { font-size: 0.75rem; }
+
+/* ============================================
+   BUTTONS - Minimal
+   ============================================ */
 
 button {
   font-family: inherit;
   cursor: pointer;
   border: none;
   outline: none;
-  transition: all 0.2s;
+  transition: all 150ms ease;
+  font-weight: 500;
 }
 
 button:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
-input {
-  font-family: inherit;
-  outline: none;
+.btn-primary {
+  padding: var(--space-2) var(--space-5);
+  background: var(--accent-primary);
+  color: white;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
 }
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-primary-hover);
+}
+
+.btn-secondary {
+  padding: var(--space-2) var(--space-4);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--bg-subtle);
+}
+
+.btn-sm {
+  padding: var(--space-1) var(--space-3);
+  font-size: 0.8125rem;
+}
+
+/* ============================================
+   CARDS - Clean
+   ============================================ */
+
+.card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
+}
+
+.card-compact {
+  padding: var(--space-4);
+}
+
+/* ============================================
+   SEMANTIC BADGES
+   ============================================ */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.badge-healthy {
+  background: var(--semantic-healthy-bg);
+  color: var(--semantic-healthy);
+}
+
+.badge-warning {
+  background: var(--semantic-warning-bg);
+  color: var(--semantic-warning);
+}
+
+.badge-critical {
+  background: var(--semantic-critical-bg);
+  color: var(--semantic-critical);
+}
+
+.badge-intelligence {
+  background: var(--semantic-intelligence-bg);
+  color: var(--semantic-intelligence);
+}
+
+.badge-neutral {
+  background: var(--semantic-neutral-bg);
+  color: var(--semantic-neutral);
+}
+
+/* ============================================
+   UTILITIES
+   ============================================ */
 
 .loading {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 400px;
-  font-size: 1.125rem;
-  color: var(--text-light);
+  color: var(--text-tertiary);
 }
 
 .error-container {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
-  padding: 2rem;
+  gap: var(--space-4);
+  padding: var(--space-10);
 }
 
 .error {
-  color: var(--danger);
+  color: var(--semantic-critical);
   font-weight: 500;
 }
 
 .retry-btn {
-  padding: 0.5rem 1.5rem;
-  background: var(--primary);
+  padding: var(--space-2) var(--space-5);
+  background: var(--accent-primary);
   color: white;
-  border-radius: 0.375rem;
-  font-weight: 500;
+  border-radius: var(--radius-sm);
 }
 
-.retry-btn:hover {
-  background: var(--primary-dark);
+input {
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-family: inherit;
+  transition: border-color 150ms ease;
 }
 
-.btn-primary {
-  padding: 0.625rem 1.5rem;
-  background: var(--primary);
-  color: white;
-  border-radius: 0.375rem;
-  font-weight: 500;
-  font-size: 0.9375rem;
+input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
 }
 
-.btn-primary:hover:not(:disabled) {
-  background: var(--primary-dark);
-}
-
-.btn-secondary {
-  padding: 0.625rem 1.5rem;
-  background: var(--card-bg);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 0.375rem;
-  font-weight: 500;
-  font-size: 0.9375rem;
-}
-
-.btn-secondary:hover {
-  background: var(--bg);
-}
-
-.error-banner {
-  padding: 1rem;
-  background: #fee2e2;
-  border: 1px solid #fecaca;
-  border-radius: 0.375rem;
-  color: var(--danger);
-  margin-bottom: 1.5rem;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 3rem;
-  color: var(--text-light);
+/* Focus states */
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
 }
